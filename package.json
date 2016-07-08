@@ -1,0 +1,32 @@
+{
+	"name": "socket-chat-example",
+	"version": "0.0.1",
+	"description": "my first socket.io app",
+	"private": true,
+	"scripts": {
+		"start": "node ./bin/www"
+	},
+	"dependencies": {
+		"express": "4.10.2",
+		"socket.io": "*",
+		"path":"*",
+		"http":"*",
+		"morgan":"*",
+		"cookie-parser":"*",
+		"body-parser":"*",
+		"mongoose":"*",
+		"passport":"*",
+		"express-session":"*",
+		"bcrypt-nodejs":"*",
+		"passport-local":"*",
+		"ejs":"*",
+		"debug":"*",
+		"serve-favicon":"*",
+		"mongodb":"*",
+		"connect-flash":"*",
+		"async": "*",
+		"express-flash": "*",
+		"crypto": "*",
+		"nodemailer": "*"
+	}
+}
