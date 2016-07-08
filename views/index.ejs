@@ -1,0 +1,19 @@
+<!doctype html>
+<html>
+	<head>
+		<title>Welcome</title>
+		<script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
+		<script src="http://code.jquery.com/jquery-1.11.1.js"></script>
+	</head>
+	<body>
+		<h4>Welcome! <%= user.uname%></h4>
+		<a href="/logout">Logout</a>
+		<h5>List of Users</h5>
+		<%if(Array.isArray(userlist)){
+		  userlist.forEach(function(docs){
+		  if(docs.username!=user.username){%>
+		    <a href="/from/<%=user.username%>/to/<%=docs.username%>"><%=docs.uname%></a><br>
+		  <%}});
+		}%>
+	</body>
+</html>
