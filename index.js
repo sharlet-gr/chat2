@@ -57,13 +57,13 @@ passport.deserializeUser(function(id, done) {
 
 app.get('/', function(req, res){
   if(!req.user)
-    res.render('login');
+   return res.render('login');
   res.redirect('/index');
 });
 
 app.get('/index', function(req, res, next) {
   if(!req.user)
-    res.redirect('/');
+    return res.redirect('/');
   user.find(function(err,docs){
     if(err)
       return next(err);
@@ -73,7 +73,7 @@ app.get('/index', function(req, res, next) {
 
 app.get('/register', function(req, res, next) {
   if(!req.user)
-    res.render('register');
+    return res.render('register');
   res.redirect('/index');  
 });
 
@@ -119,18 +119,18 @@ app.param('receiver',function(req,res,next,receiver){
 
 app.get('/from/:sender/to/:receiver',function(req,res,next){
   if(!req.user)
-    res.redirect('/');
+    return res.redirect('/');
+  if(req.sender == req.receiver)
+    return res.redirect('/index');
   if(req.user.username == req.sender)
     return res.render('chat',{sender: req.sender, receiver: req.receiver});
-  else 
-    redirect('/logout');
+  res.redirect('/logout');
 });
 
 var sockets=[];
 io.on('connection', function(socket){
   socket.on('userjoin',function(sender, receiver){
     sockets.push({id:socket.id, sender:sender, receiver:receiver});
-    var len=sockets.length;
   });
   socket.on('chatMessage',function(sender, message, receiver){
     for (var i = 0; i < sockets.length; i++) {
@@ -138,8 +138,39 @@ io.on('connection', function(socket){
         socket.broadcast.to(sockets[i].id).emit( 'chatMessage', sender, message, receiver);
     }
   });
+  socket.on('disconnect',function(){
+    console.log("disconnect",socket.id);
+    var sender, receiver;
+    for (var i = 0; i < sockets.length; i++) {
+      if(sockets[i].id == socket.id)
+      {
+        sender=sockets[i].sender;
+        receiver=sockets[i].receiver;
+        sockets.splice(i,1);
+        break;
+      }
+    }
+  });
+  socket.on('logout',function(){
+    var sender, receiver;
+    for (var i = 0; i < sockets.length; i++) {
+      if(sockets[i].id == socket.id)
+      {
+        sender=sockets[i].sender;
+        receiver=sockets[i].receiver;
+        // sockets.splice(i,1);
+        break;
+      }
+    }
+    for (var i = 0; i < sockets.length; i++){
+      if(sockets[i].sender==sender)
+      {
+        socket.broadcast.to(sockets[i].id).emit('sessionEnd');
+        sockets.splice(i,1);
+      }
+    }
+  });
 });
-
 // Listen application request on port 3000
 http.listen(3000, function(){
   console.log('listening on *:3000');
