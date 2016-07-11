@@ -18,6 +18,8 @@ var LocalStrategy = require('passport-local').Strategy;
 mongoose.connect('mongodb://localhost/shw');
 require('./models/user');
 var user= mongoose.model('user');
+require('./models/message');
+var Message= mongoose.model('Message');
 
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
@@ -57,14 +59,14 @@ passport.deserializeUser(function(id, done) {
 
 app.get('/', function(req, res){
   if(!req.user)
-   return res.render('login');
+    return res.render('login');
   res.redirect('/index');
 });
 
 app.get('/index', function(req, res, next) {
   if(!req.user)
     return res.redirect('/');
-  user.find(function(err,docs){
+  user.find({},{'_id':false,'username':true,'uname':true},function(err,docs){
     if(err)
       return next(err);
     return res.render('index',{user:req.user, userlist:docs});
@@ -83,7 +85,8 @@ app.post('/register', function(req, res) {
   User.username=req.body.username; 
   User.password=req.body.password;
   User.save(function(err){
-    if(err) console.log(err);
+    if(err) 
+      console.log(err);
     req.logIn(User, function(err,success){
       return res.redirect('/index');   
     }); 
@@ -92,12 +95,14 @@ app.post('/register', function(req, res) {
 
 app.post('/login', function(req, res, next) {
   passport.authenticate('local', function(err,user, info) {
-    if (err) return next(err);
+    if (err) 
+      return next(err);
     if (!user) {
       return res.redirect('/');
     }
     req.logIn(user, function(err, info) {
-      if (err) return next(err);
+      if (err) 
+        return next(err);
       return res.redirect('/index');
     });
   })(req, res, next);
@@ -123,8 +128,17 @@ app.get('/from/:sender/to/:receiver',function(req,res,next){
   if(req.sender == req.receiver)
     return res.redirect('/index');
   if(req.user.username == req.sender)
-    return res.render('chat',{sender: req.sender, receiver: req.receiver});
-  res.redirect('/logout');
+  {
+    var messages;
+    Message.find({$or: [{from: req.sender, to: req.receiver},{from: req.receiver, to: req.sender}]},function(err, docs){
+      if(err)
+        return next(err);
+      messages=docs;
+      return res.render('chat',{sender: req.sender, receiver: req.receiver, messages: messages});
+    });
+  }
+  else 
+    res.redirect('/logout');
 });
 
 var sockets=[];
@@ -133,13 +147,19 @@ io.on('connection', function(socket){
     sockets.push({id:socket.id, sender:sender, receiver:receiver});
   });
   socket.on('chatMessage',function(sender, message, receiver){
+    var msg = new Message();
+    msg.content = message;
+    msg.from = sender;
+    msg.to = receiver; 
+    msg.save(function(err){
+      if(err) console.log(err);
+    });
     for (var i = 0; i < sockets.length; i++) {
       if((sockets[i].sender==sender && sockets[i].receiver==receiver)||(sockets[i].sender==receiver && sockets[i].receiver==sender))
         socket.broadcast.to(sockets[i].id).emit( 'chatMessage', sender, message, receiver);
     }
   });
   socket.on('disconnect',function(){
-    console.log("disconnect",socket.id);
     var sender, receiver;
     for (var i = 0; i < sockets.length; i++) {
       if(sockets[i].id == socket.id)
@@ -158,16 +178,12 @@ io.on('connection', function(socket){
       {
         sender=sockets[i].sender;
         receiver=sockets[i].receiver;
-        // sockets.splice(i,1);
         break;
       }
     }
     for (var i = 0; i < sockets.length; i++){
       if(sockets[i].sender==sender)
-      {
         socket.broadcast.to(sockets[i].id).emit('sessionEnd');
-        sockets.splice(i,1);
-      }
     }
   });
 });
