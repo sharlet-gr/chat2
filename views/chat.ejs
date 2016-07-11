@@ -19,8 +19,19 @@
     </head>
     <body>
       <button id="logout">Logout</button>
-      <ul id="messages"></ul>
-      <form id="form" action="" onsubmit="return submitfunction();" >
+      <ul id="messages">
+        <% if(Array.isArray(messages)){
+        messages.forEach(function(message){
+          if(message.from==sender){%>
+            <li><b style="color:green">Me: </b><%= message.content%></li>
+          <%}
+          else{%>
+            <li><b style="color:#009afd"><%= message.from%>: </b><%= message.content%></li>
+          <%}
+        })
+        } %>
+      </ul>
+      <form id="form" action="" onsubmit="return submitfunction();">
         <p id="sender" type="hidden"><%= sender%></p>
         <p id="receiver" type="hidden"><%= receiver%></p>
         <input id="m" autocomplete="off" placeholder="Type yor message here.." />
